@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flying Fox Growth Metriculator</title>
+    <style>
+        :root {
+            --bg-color: #1a1d21;
+            --card-bg: #252a30;
+            --text-color: #ffffff;
+            --accent-blue: #4a90e2;
+            --accent-green: #7ed321;
+            --input-bg: #323942;
+            --border-color: #444;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 850px;
+            display: flex;
+            gap: 40px;
+        }
+
+        .layout-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            width: 100%;
+        }
+
+        .form-section, .results-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        h2 { font-size: 0.9rem; letter-spacing: 1px; color: #aaa; margin-bottom: 20px; text-transform: uppercase; }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        label {
+            width: 120px;
+            font-size: 0.9rem;
+            color: #ddd;
+        }
+
+        input, select {
+            flex: 1;
+            padding: 10px;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: white;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        input:focus, select:focus { border-color: var(--accent-blue); }
+
+        .calc-btn {
+            background-color: var(--accent-blue);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+            transition: opacity 0.2s;
+        }
+
+        .calc-btn:hover { opacity: 0.9; }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .result-label { color: #bbb; font-size: 0.95rem; }
+        .result-value { color: var(--accent-green); font-weight: bold; font-size: 1.1rem; }
+        
+        #saveStatus { font-size: 0.75rem; text-align: center; margin-top: 10px; color: #ff9f43; height: 1.2em; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="layout-grid">
+        <div class="form-section">
+            <h2>Flying Fox Data Entry</h2>
+            <div class="input-group">
+                <label>Arc No:</label>
+                <input type="text" id="arcNo" placeholder="Enter ID">
+            </div>
+            <div class="input-group">
+                <label>Name:</label>
+                <input type="text" id="name" placeholder="Name" oninput="autoLookupArc()">
+            </div>
+            <div class="input-group">
+                <label>Sex:</label>
+                <select id="sex">
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Unknown">Unknown</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Species:</label>
+                <select id="species">
+                    <option value="BHFF">Black Headed Flying Fox</option>
+                    <option value="GHFF">Grey Headed Flying Fox</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Date:</label>
+                <input type="date" id="entryDate">
+            </div>
+            <div class="input-group">
+                <label>Forearm (mm):</label>
+                <input type="number" id="forearm" step="0.1" placeholder="0.0">
+            </div>
+            <div class="input-group">
+                <label>Weight (g):</label>
+                <input type="number" id="weight" step="0.1" placeholder="0.0">
+            </div>
+            <button class="calc-btn" onclick="runCalculations()">CALCULATE</button>
+            <div id="saveStatus"></div>
+        </div>
+
+        <div class="results-section">
+            <h2>Growth Metrics</h2>
+            <div class="result-item">
+                <span class="result-label">Projected Age:</span>
+                <span id="resAge" class="result-value">--</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Projected Weight:</span>
+                <span id="resWeight" class="result-value">--</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Percentage Weight:</span>
+                <span id="resPct" class="result-value">--</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Feed Schedule:</span>
+                <span id="resSchedule" class="result-value" style="font-size: 0.9rem;">--</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Total Volume (mls):</span>
+                <span id="resMls" class="result-value">--</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. Setup Defaults
+    window.onload = function() {
+        document.getElementById('entryDate').valueAsDate = new Date();
+    };
+
+    // 2. Name-to-ArcNo Registry
+    const batRegistry = {
+        "Pip": "ARC-101",
+        "Blinky": "ARC-105",
+        "Skye": "ARC-102"
+    };
+
+    function autoLookupArc() {
+        const nameInput = document.getElementById('name').value.trim();
+        const arcInput = document.getElementById('arcNo');
+        if (batRegistry[nameInput] && arcInput.value === "") {
+            arcInput.value = batRegistry[nameInput];
+        }
+    }
+
+    // 3. Full Data Table
+    const batData = {
+        "57.5": [1, 71, 18, "3-3-4-4-4"], "59.0": [2, 72, 18, "3-3-4-4-4"], "60.0": [3, 73, 18, "3-3-4-4-4"],
+        "61.5": [4, 74, 19, "3-4-4-4-4"], "63.0": [5, 75, 19, "3-4-4-4-4"], "64.0": [6, 76, 19, "3-4-4-4-4"],
+        "65.0": [7, 78, 20, "4-4-4-4-4"], "66.5": [8, 79, 20, "4-4-4-4-4"], "68.0": [9, 80, 20, "4-4-4-4-4"],
+        "69.0": [10, 82, 21, "4-4-4-4-5"], "70.0": [11, 83, 21, "4-4-4-4-5"], "71.5": [12, 85, 21, "4-4-4-4-5"],
+        "72.5": [13, 87, 22, "4-4-4-5-5"], "73.5": [14, 89, 22, "4-4-4-5-5"], "75.0": [15, 91, 23, "4-4-5-5-5"],
+        "76.0": [16, 93, 23, "4-4-5-5-5"], "77.0": [17, 95, 24, "4-5-5-5-5"], "78.5": [18, 98, 25, "5-5-5-5-5"],
+        "79.5": [19, 100, 25, "5-5-5-5-5"], "80.5": [20, 102, 26, "5-5-5-5-6"], "81.5": [21, 104, 26, "5-5-5-5-6"],
+        "83.0": [22, 106, 27, "5-5-5-6-6"], "84.0": [23, 109, 27, "5-5-5-6-6"], "85.0": [24, 112, 28, "5-5-6-6-6"],
+        "86.0": [25, 115, 28, "5-5-6-6-6"], "87.0": [26, 117, 29, "5-6-6-6-6"], "88.0": [27, 119, 30, "6-6-6-6-6"],
+        "89.0": [28, 122, 31, "7-8-8-8"], "90.0": [29, 125, 31, "7-8-8-8"], "91.0": [30, 128, 32, "8-8-8-8"],
+        "92.0": [31, 131, 33, "8-8-8-9"], "93.0": [32, 134, 34, "8-8-9-9"], "94.0": [33, 137, 34, "8-8-9-9"],
+        "95.0": [34, 140, 35, "8-9-9-9"], "96.0": [35, 144, 36, "9-9-9-9"], "97.0": [36, 147, 37, "9-9-9-10"],
+        "98.0": [37, 150, 38, "9-9-10-10"], "99.0": [38, 153, 38, "9-9-10-10"], "99.5": [39, 156, 39, "9-10-10-10"],
+        "100.5": [40, 159, 40, "10-10-10-10"], "101.5": [41, 162, 41, "10-10-10-11"], "102.0": [42, 166, 42, "10-10-11-11"],
+        "103.0": [43, 169, 42, "10-10-11-11"], "104.0": [44, 173, 43, "10-11-11-11"], "105.0": [45, 177, 44, "11-11-11-11"],
+        "105.5": [46, 180, 45, "11-11-11-12"], "106.5": [47, 183, 46, "11-11-12-12"], "107.5": [48, 187, 47, "11-12-12-12"],
+        "108.5": [49, 192, 48, "12-12-12-12"], "109.5": [50, 195, 49, "12-12-12-13"], "110.0": [51, 198, 50, "12-12-13-13"],
+        "110.5": [52, 202, 51, "12-13-13-13"], "111.5": [53, 206, 51, "12-13-13-13"], "112.0": [54, 209, 52, "13-13-13-13"],
+        "113.0": [55, 213, 53, "13-13-13-14"], "114.0": [56, 217, 54, "13-13-14-14"], "114.5": [57, 221, 55, "13-14-14-14"],
+        "115.0": [58, 225, 56, "14-14-14-14"], "116.0": [59, 229, 57, "14-14-14-15"], "117.0": [60, 232, 58, "14-14-15-15"],
+        "117.5": [61, 236, 59, "14-15-15-15"], "118.5": [62, 240, 60, "15-15-15-15"], "119.0": [63, 244, 60, "15-15-15-15"],
+        "119.5": [64, 248, 60, "15-15-15-15"], "120.0": [65, 252, 60, "15-15-15-15"], "121.0": [66, 256, 60, "15-15-15-15"],
+        "121.5": [67, 260, 60, "15-15-15-15"], "122.0": [68, 263, 60, "15-15-15-15"], "123.0": [69, 267, 60, "15-15-15-15"],
+        "123.5": [70, 272, 60, "15-15-15-15"], "124.0": [71, 275, 45, "15-15-15"], "124.5": [72, 279, 45, "15-15-15"],
+        "125.0": [73, 283, 45, "15-15-15"], "126.0": [74, 287, 30, "15-15"], "126.5": [75, 291, 30, "15-15"],
+        "127.0": [76, 295, 30, "15-15"], "127.5": [77, 298, 15, "15"], "128.0": [78, 303, 15, "15"],
+        "129.0": [79, 307, 15, "15"], "129.5": [80, 310, 0, "0-0"], "130.0": [81, 314, 0, "0-0"],
+        "130.5": [82, 317, 0, "0-0"], "131.0": [83, 322, 0, "0-0"], "131.5": [84, 326, 0, "0-0"],
+        "132.0": [85, 329, "-", "-"]
+    };
+
+    // 4. Main Function
+    function runCalculations() {
+        const faInput = document.getElementById('forearm').value;
+        const wInput = document.getElementById('weight').value;
+        const arcNo = document.getElementById('arcNo').value.trim();
+        const name = document.getElementById('name').value.trim();
+        const dateVal = document.getElementById('entryDate').value;
+
+        if (!faInput) return alert("Please enter forearm measurement.");
+
+        const key = parseFloat(faInput).toFixed(1);
+        const entry = batData[key];
+
+        if (entry) {
+            document.getElementById('resAge').innerText = entry[0] + " days";
+            document.getElementById('resWeight').innerText = entry[1] + " g";
+            document.getElementById('resMls').innerText = entry[2] + " mls";
+            document.getElementById('resSchedule').innerText = entry[3];
+
+            if (wInput) {
+                document.getElementById('resPct').innerText = ((parseFloat(wInput) / entry[1]) * 100).toFixed(1) + "%";
+            }
+
+            // TRIGGER SAVE
+            if (arcNo !== "" || name !== "") {
+                saveToSheets({
+                    date: dateVal,
+                    arcNo: arcNo,
+                    name: name,
+                    sex: document.getElementById('sex').value,
+                    species: document.getElementById('species').value,
+                    forearm: key,
+                    weight: wInput
+                });
+            }
+        } else {
+            alert("Value " + key + "mm not in table.");
+        }
+    }
+
+    // 5. Saving Function
+    function saveToSheets(data) {
+        // PASTE YOUR NEW WEB APP URL HERE
+        const url = "https://script.google.com/macros/s/AKfycbzuDzXDdmVsK_gZeAb0xakf00gtqgimuuM9EceIeBRs1uYjcK__cMo5BxvQpug8WbCR/exec";
+        
+        document.getElementById('saveStatus').style.color = "#ff9f43";
+        document.getElementById('saveStatus').innerText = "Saving to Google Sheets...";
+        
+        fetch(url, {
+            method: "POST",
+            mode: "no-cors", 
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify(data)
+        }).then(() => {
+            document.getElementById('saveStatus').style.color = "#7ed321";
+            document.getElementById('saveStatus').innerText = "SAVED TO SHEET";
+        }).catch(() => {
+            document.getElementById('saveStatus').style.color = "#ff4d4d";
+            document.getElementById('saveStatus').innerText = "SAVE FAILED";
+        });
+    }
+</script>
+
+</body>
+</html>
