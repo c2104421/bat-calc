@@ -52,7 +52,6 @@
         "132.0": [85, 329, "-", "-"]
     };
 
-    // 4. Main Function
     function runCalculations() {
         const faInput = document.getElementById('forearm').value;
         const wInput = document.getElementById('weight').value;
@@ -65,38 +64,41 @@
         const key = parseFloat(faInput).toFixed(1);
         const entry = batData[key];
 
+        // 1. Update the display metrics
         if (entry) {
             document.getElementById('resAge').innerText = entry[0] + " days";
             document.getElementById('resWeight').innerText = entry[1] + " g";
             document.getElementById('resMls').innerText = entry[2] + " mls";
             document.getElementById('resSchedule').innerText = entry[3];
-
             if (wInput) {
                 document.getElementById('resPct').innerText = ((parseFloat(wInput) / entry[1]) * 100).toFixed(1) + "%";
             }
-
-            // TRIGGER SAVE
-            if (arcNo !== "" || name !== "") {
-                // DATE FIX: Split and reverse to DD/MM/YYYY so Sheet doesn't default to 1970
-                const d = dateVal.split("-");
-                const safeDate = d[2] + "/" + d[1] + "/" + d[0];
-
-                saveToSheets({
-                    date: safeDate,
-                    arcNo: arcNo,
-                    name: name,
-                    sex: document.getElementById('sex').value,
-                    species: document.getElementById('species').value,
-                    forearm: key,
-                    weight: wInput
-                });
-            }
         } else {
-            alert("Value " + key + "mm not in table.");
+            // This is what shows if the bat is too large
+            document.getElementById('resAge').innerText = "N/A (Adult)";
+            document.getElementById('resWeight').innerText = "--";
+            document.getElementById('resMls').innerText = "--";
+            document.getElementById('resSchedule').innerText = "--";
+            document.getElementById('resPct').innerText = "--";
+        }
+
+        // 2. TRIGGER SAVE (Outside the 'entry' block so it always saves)
+        if (arcNo !== "" || name !== "") {
+            // Keep the simple YYYY-MM-DD string to avoid the split error
+            const safeDate = dateVal ? dateVal : new Date().toISOString().split('T')[0];
+
+            saveToSheets({
+                date: safeDate,
+                arcNo: arcNo,
+                name: name,
+                sex: document.getElementById('sex').value,
+                species: document.getElementById('species').value,
+                forearm: key,
+                weight: wInput
+            });
         }
     }
 
-    // 5. Saving Function
     function saveToSheets(data) {
         const url = "https://script.google.com/macros/s/AKfycbzuDzXDdmVsK_gZeAb0xakf00gtqgimuuM9EceIeBRs1uYjcK__cMo5BxvQpug8WbCR/exec";
         
