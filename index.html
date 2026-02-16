@@ -1,25 +1,142 @@
-<script>
-    // 1. Setup Defaults
-    window.onload = function() {
-        document.getElementById('entryDate').valueAsDate = new Date();
-    };
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flying Fox Growth Metriculator</title>
+    <style>
+        :root {
+            --bg-color: #1a1d21;
+            --card-bg: #252a30;
+            --text-color: #ffffff;
+            --accent-blue: #4a90e2;
+            --accent-green: #7ed321;
+            --input-bg: #323942;
+            --border-color: #444;
+        }
 
-    // 2. Name-to-ArcNo Registry
-    const batRegistry = {
-        "Pip": "ARC-101",
-        "Blinky": "ARC-105",
-        "Skye": "ARC-102"
-    };
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 850px;
+            display: flex;
+            gap: 40px;
+        }
+
+        .layout-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            width: 100%;
+        }
+
+        h2 { font-size: 0.9rem; letter-spacing: 1px; color: #aaa; margin-bottom: 20px; text-transform: uppercase; }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        label { width: 120px; font-size: 0.9rem; color: #ddd; }
+
+        input, select {
+            flex: 1;
+            padding: 10px;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: white;
+        }
+
+        .calc-btn {
+            background-color: var(--accent-blue);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .result-value { color: var(--accent-green); font-weight: bold; }
+        
+        #saveStatus { font-size: 0.75rem; text-align: center; margin-top: 10px; color: #ff9f43; height: 1.2em; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="layout-grid">
+        <div class="form-section">
+            <h2>Flying Fox Data Entry</h2>
+            <div class="input-group"><label>Arc No:</label><input type="text" id="arcNo"></div>
+            <div class="input-group"><label>Name:</label><input type="text" id="name" oninput="autoLookupArc()"></div>
+            <div class="input-group">
+                <label>Sex:</label>
+                <select id="sex">
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Unknown">Unknown</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Species:</label>
+                <select id="species">
+                    <option value="BHFF">BHFF</option>
+                    <option value="GHFF">GHFF</option>
+                </select>
+            </div>
+            <div class="input-group"><label>Date:</label><input type="date" id="entryDate"></div>
+            <div class="input-group"><label>Forearm (mm):</label><input type="number" id="forearm" step="0.1" placeholder="0.0"></div>
+            <div class="input-group"><label>Weight (g):</label><input type="number" id="weight" step="0.1" placeholder="0.0"></div>
+            <button class="calc-btn" onclick="runCalculations()">CALCULATE & SAVE</button>
+            <div id="saveStatus"></div>
+        </div>
+
+        <div class="results-section">
+            <h2>Growth Metrics</h2>
+            <div class="result-item"><span>Projected Age:</span><span id="resAge" class="result-value">--</span></div>
+            <div class="result-item"><span>Projected Weight:</span><span id="resWeight" class="result-value">--</span></div>
+            <div class="result-item"><span>Percentage Weight:</span><span id="resPct" class="result-value">--</span></div>
+            <div class="result-item"><span>Feed Schedule:</span><span id="resSchedule" class="result-value">--</span></div>
+            <div class="result-item"><span>Total Volume (mls):</span><span id="resMls" class="result-value">--</span></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.onload = function() { document.getElementById('entryDate').valueAsDate = new Date(); };
+
+    const batRegistry = { "Pip": "ARC-101", "Blinky": "ARC-105", "Skye": "ARC-102" };
 
     function autoLookupArc() {
         const nameInput = document.getElementById('name').value.trim();
         const arcInput = document.getElementById('arcNo');
-        if (batRegistry[nameInput] && arcInput.value === "") {
-            arcInput.value = batRegistry[nameInput];
-        }
+        if (batRegistry[nameInput] && arcInput.value === "") { arcInput.value = batRegistry[nameInput]; }
     }
 
-    // 3. Full Data Table
     const batData = {
         "57.5": [1, 71, 18, "3-3-4-4-4"], "59.0": [2, 72, 18, "3-3-4-4-4"], "60.0": [3, 73, 18, "3-3-4-4-4"],
         "61.5": [4, 74, 19, "3-4-4-4-4"], "63.0": [5, 75, 19, "3-4-4-4-4"], "64.0": [6, 76, 19, "3-4-4-4-4"],
@@ -64,7 +181,6 @@
         const key = parseFloat(faInput).toFixed(1);
         const entry = batData[key];
 
-        // 1. Update the display metrics
         if (entry) {
             document.getElementById('resAge').innerText = entry[0] + " days";
             document.getElementById('resWeight').innerText = entry[1] + " g";
@@ -74,7 +190,6 @@
                 document.getElementById('resPct').innerText = ((parseFloat(wInput) / entry[1]) * 100).toFixed(1) + "%";
             }
         } else {
-            // This is what shows if the bat is too large
             document.getElementById('resAge').innerText = "N/A (Adult)";
             document.getElementById('resWeight').innerText = "--";
             document.getElementById('resMls').innerText = "--";
@@ -82,13 +197,9 @@
             document.getElementById('resPct').innerText = "--";
         }
 
-        // 2. TRIGGER SAVE (Outside the 'entry' block so it always saves)
         if (arcNo !== "" || name !== "") {
-            // Keep the simple YYYY-MM-DD string to avoid the split error
-            const safeDate = dateVal ? dateVal : new Date().toISOString().split('T')[0];
-
             saveToSheets({
-                date: safeDate,
+                date: dateVal,
                 arcNo: arcNo,
                 name: name,
                 sex: document.getElementById('sex').value,
@@ -101,7 +212,6 @@
 
     function saveToSheets(data) {
         const url = "https://script.google.com/macros/s/AKfycbzuDzXDdmVsK_gZeAb0xakf00gtqgimuuM9EceIeBRs1uYjcK__cMo5BxvQpug8WbCR/exec";
-        
         document.getElementById('saveStatus').style.color = "#ff9f43";
         document.getElementById('saveStatus').innerText = "Saving to Google Sheets...";
         
@@ -119,3 +229,6 @@
         });
     }
 </script>
+
+</body>
+</html>
