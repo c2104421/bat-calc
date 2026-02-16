@@ -199,7 +199,7 @@
 
         if (arcNo !== "" || name !== "") {
             saveToSheets({
-                date: dateVal,
+                date: dateVal.split('-').reverse().join('/'),
                 arcNo: arcNo,
                 name: name,
                 sex: document.getElementById('sex').value,
@@ -232,3 +232,4 @@
 
 </body>
 </html>
+
