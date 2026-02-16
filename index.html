@@ -198,8 +198,17 @@
         }
 
         if (arcNo !== "" || name !== "") {
+            // Safety Check: If dateVal is empty, use today's date
+            let finalDate = dateVal;
+            if (finalDate && finalDate.includes('-')) {
+                finalDate = finalDate.split('-').reverse().join('/');
+            } else {
+                let today = new Date();
+                finalDate = today.getDate() + '/' + (today.getMonth() + 1) + '/' + today.getFullYear();
+            }
+
             saveToSheets({
-                date: dateVal.split('-').reverse().join('/'),
+                date: finalDate,
                 arcNo: arcNo,
                 name: name,
                 sex: document.getElementById('sex').value,
@@ -208,6 +217,7 @@
                 weight: wInput
             });
         }
+        
     }
 
     function saveToSheets(data) {
@@ -232,4 +242,5 @@
 
 </body>
 </html>
+
 
